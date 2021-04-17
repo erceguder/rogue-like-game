@@ -3,23 +3,28 @@
 #include <stdio.h>
 
 void print_map(map_info *mi) {
-  int mc = 0;
   for (int y = 0; y < mi->map_height; y++) {
     for (int x = 0; x < mi->map_width; x++) {
       if (x == mi->player.x && y == mi->player.y) {
         printf("@");
-      } else if (mc < mi->alive_monster_count &&
-                 x == mi->monster_coordinates[mc].x &&
-                 y == mi->monster_coordinates[mc].y) {
-        printf("%c", mi->monster_types[mc]);
-        mc++;
       } else if (x == mi->door.x && y == mi->door.y) {
         printf("+");
       } else if (x == 0 || x == mi->map_width - 1 || y == 0 ||
                  y == mi->map_height - 1) {
         printf("#");
       } else {
-        printf(".");
+        bool empty = true;
+        for (int m = 0; m < mi->alive_monster_count; m++) {
+          if (x == mi->monster_coordinates[m].x &&
+              y == mi->monster_coordinates[m].y) {
+            printf("%c", mi->monster_types[m]);
+            empty = false;
+            break;
+          }
+        }
+        if (empty) {
+          printf(".");
+        }
       }
     }
     printf("\n");

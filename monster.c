@@ -3,12 +3,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include "message.h"
-#define MAX(a,b) (((a)>(b))?(a):(b))
 
-int dist(coordinate coord1, coordinate coord2){
-    return abs(coord1.x - coord2.x) + abs(coord1.y - coord2.y);
-}
+#include "message.h"
+#include "utils.h"
 
 // Pipe has been established... relax, kiddo
 // Printf does NOT work!!!
