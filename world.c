@@ -68,8 +68,8 @@ int main(void){
 
         close(player_fd[0]);
 
-        // Are you sure of 5 bytes?
-        char x_pos_door_str[5], y_pos_door_str[5], player_arg1_str[5], player_arg2_str[5], player_arg3_str[5];
+        // Are you sure of 15 bytes?
+        char x_pos_door_str[15], y_pos_door_str[15], player_arg1_str[15], player_arg2_str[15], player_arg3_str[15];
 
         sprintf(x_pos_door_str, "%d", x_pos_of_the_door);
         sprintf(y_pos_door_str, "%d", y_pos_of_the_door);
@@ -111,8 +111,8 @@ int main(void){
 
             close(monster_fds[i][0]);
 
-            // Are you sure of 5 bytes?
-            char health[5], dmg_induced[5], defence[5], range[5];
+            // Are you sure of 15 bytes?
+            char health[15], dmg_induced[15], defence[15], range[15];
 
             sprintf(health, "%d", mr_arg1[i]);
             sprintf(dmg_induced, "%d", mr_arg2[i]);
