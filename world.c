@@ -1,9 +1,9 @@
 #include <sys/socket.h>
-#include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <limits.h>
 #include <wait.h>
+#include <stdio.h>
 
 #include "logging.h"
 #include "message.h"
@@ -50,6 +50,7 @@ int main(void){
 
     // Ordering of monsters
     // TODO: CHANGE THE ORDER OF EXECUTABLE PATHS !
+    
     sort_monsters(false, monster_fds, mr_alive, no_of_monsters, mr_coords, symbols, mr_arg1, mr_arg2, mr_arg3, mr_arg4);
 
     // Creating the pipe between the player and the game world.
@@ -191,6 +192,8 @@ int main(void){
 
     while (!game_over){
 
+        //printf("******************NEW TURN******************\n");
+
         // Clear damage inflicted on monsters
         for (int i=0; i < MONSTER_LIMIT; i++)
             damage_inflicted_on_mrs[i] = 0;
@@ -203,8 +206,15 @@ int main(void){
         pr_msg.alive_monster_count = tmp_no_of_monsters;
 
         // This copies dead monster coordinates... SOLVED.
-        copy_coords(no_of_monsters, mr_alive, mr_coords, pr_msg.monster_coordinates);
+        copy_coords(tmp_no_of_monsters, mr_alive, mr_coords, pr_msg.monster_coordinates);
 
+        /*
+        printf("Monster coordinates sent to the player:\n");
+
+        for (int i=0; i < tmp_no_of_monsters; i++)
+            printf("\tpr_msg.monster_coordinates[%d]'s x:%d, y:%d\n", i, pr_msg.monster_coordinates[i].x, pr_msg.monster_coordinates[i].y);
+        printf("\n");
+        */
         pr_msg.game_over = game_over;
 
         write(player_fd[1], &pr_msg, sizeof(pr_msg));
@@ -214,6 +224,9 @@ int main(void){
         if (player_left){
             go_status = go_left;
             game_over = true;
+
+            int* child_status;
+            wait(child_status);
         }
 
         switch(pr_response.pr_type){
@@ -236,6 +249,13 @@ int main(void){
 
                             pr_coord.x = new_pos.x;
                             pr_coord.y = new_pos.y;
+
+                            //Inform player process, and reap it
+                            pr_msg.game_over = true;
+                            write(player_fd[1], &pr_msg, sizeof(pr_msg));
+
+                            int* child_status;
+                            wait(child_status);
                         }
                         
                         // else: Nothing to do, as player cannot move into a wall...
@@ -259,11 +279,20 @@ int main(void){
 
                 for (int i=0; i < no_of_monsters; i++){
 
-                    if(mr_alive[i] && pr_response.pr_content.attacked[i] > 0){
+                    if(pr_response.pr_content.attacked[i] > 0){
 
-                        //printf("Player attacked monster %d\n", i);
+                        // Sync'ing the array sent to the player and game_world's...
 
-                        damage_inflicted_on_mrs[i] = pr_response.pr_content.attacked[i];
+                        int alive_cnt = 0;
+                        int index;
+
+                        for (index=0; alive_cnt <= i; index++){
+                            if (mr_alive[index])
+                                alive_cnt++;
+                        }
+                        index--; // Needs trimming
+
+                        damage_inflicted_on_mrs[index] = pr_response.pr_content.attacked[i];
                     }
                 }
 
@@ -284,22 +313,25 @@ int main(void){
 
         damage_inflicted_on_player = 0;
 
+        //sort_monsters(true, monster_fds, mr_alive, no_of_monsters, mr_coords, symbols, mr_arg1, mr_arg2, mr_arg3, mr_arg4);
+        //printf("\n");
+
         for (int i=0; i < no_of_monsters; i++){
 
             if (mr_alive[i] == false) continue;
 
             mr_msg.new_position = mr_coords[i];
             mr_msg.damage = damage_inflicted_on_mrs[i];
+            
             mr_msg.player_coordinate = pr_coord;
             mr_msg.game_over = game_over;
 
             write(monster_fds[i][1], &mr_msg, sizeof(mr_msg));
 
-            // After sending game_over signal, why is this not waiting? EOF, dumb f*ck.
+            // After sending game_over signal, why is this not waiting? EOF.
             read(monster_fds[i][1], &mr_response, sizeof(monster_response));
 
             switch(mr_response.mr_type){
-
                 case mr_move:
                     ; // This is needed to avoid silly errors...
 
@@ -315,7 +347,7 @@ int main(void){
 
                         if (!occupied){
 
-                            //printf("Monster %d moved to (%d, %d)\n", i, new_pos.x, new_pos.y);
+                            //printf("Monster %c moved to (%d, %d)\n", symbols[i], new_pos.x, new_pos.y);
 
                             mr_coords[i].x = new_pos.x;
                             mr_coords[i].y = new_pos.y;
@@ -325,14 +357,14 @@ int main(void){
 
                 case mr_attack:
 
-                    //printf("Monster %d wants to attac\n", i);
+                    //printf("Monster %c wants to attac\n", symbols[i]);
 
                     damage_inflicted_on_player += mr_response.mr_content.attack;
                     break;
 
                 case mr_dead:
 
-                    //printf("Monster %d is dead :)\n", i);
+                    //printf("Monster %c is dead :)\n", symbols[i]);
 
                     mr_alive[i] = false;
 
@@ -347,23 +379,42 @@ int main(void){
 
         // Re-ordering of monsters go here. NOTE: Keep pipes in mind.
         sort_monsters(true, monster_fds, mr_alive, no_of_monsters, mr_coords, symbols, mr_arg1, mr_arg2, mr_arg3, mr_arg4);
-
+        
+        /*
+        for (int i=0; i < no_of_monsters; i++){
+            printf("Monster[%d] or %c, x:%d, y:%d, alive:%d\n", i, symbols[i], mr_coords[i].x, mr_coords[i].y, mr_alive[i]);
+        }
+        printf("\n");
+        */
         if (tmp_no_of_monsters == 0){
             game_over = true;
             go_status = go_survived;
+
+            pr_msg.game_over = true;
+            write(player_fd[1], &pr_msg, sizeof(pr_msg));
+
+            int* child_status;
+            wait(child_status);
         }
 
         // Printing updated map
         {
+            //printf("just before print_map: ");
+
             map_info map;
 
             coordinate door_coord = {x_pos_of_the_door, y_pos_of_the_door};
 
+            int skipped = 0;
+
             for(int i=0; i < no_of_monsters; i++){
                 if (mr_alive[i]){
-                    map.monster_coordinates[i] = mr_coords[i];
-                    map.monster_types[i] = symbols[i];
+
+                    map.monster_coordinates[i-skipped] = mr_coords[i];
+                    map.monster_types[i-skipped] = symbols[i];
                 }
+                else
+                    skipped++;
             }
 
             map.map_width = width_of_the_room; map.map_height = height_of_the_room;
@@ -382,4 +433,6 @@ int main(void){
     }
 
     print_game_over(go_status);
+
+    //while(1);
 }
