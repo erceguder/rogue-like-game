@@ -21,11 +21,13 @@ int main(void){
     coordinate mr_coords[MONSTER_LIMIT];
 
     char exec_of_player[PATH_MAX];
-    int player_arg1, player_arg2, player_arg3;
+    //int player_arg1, player_arg2, player_arg3;
+    char player_arg1[1024], player_arg2[1024], player_arg3[1024];
 
     int no_of_monsters, tmp_no_of_monsters;
-    char exec_of_monsters[MONSTER_LIMIT][PATH_MAX], symbols[MONSTER_LIMIT];
-    int mr_arg1[MONSTER_LIMIT], mr_arg2[MONSTER_LIMIT], mr_arg3[MONSTER_LIMIT], mr_arg4[MONSTER_LIMIT];
+    char path_of_monsters[MONSTER_LIMIT][PATH_MAX], symbols[MONSTER_LIMIT];
+    //int mr_arg1[MONSTER_LIMIT], mr_arg2[MONSTER_LIMIT], mr_arg3[MONSTER_LIMIT], mr_arg4[MONSTER_LIMIT];
+    char mr_arg1[MONSTER_LIMIT][1024], mr_arg2[MONSTER_LIMIT][1024], mr_arg3[MONSTER_LIMIT][1024], mr_arg4[MONSTER_LIMIT][1024];
 
     int player_fd[2];
     int monster_fds[MONSTER_LIMIT][2];
@@ -40,16 +42,30 @@ int main(void){
     scanf("%d %d", &width_of_the_room, &height_of_the_room);
     scanf("%d %d", &x_pos_of_the_door, &y_pos_of_the_door);
     scanf("%d %d", &pr_coord.x, &pr_coord.y);
-    scanf("%s %d %d %d", exec_of_player, &player_arg1, &player_arg2, &player_arg3);
+    //scanf("%s %d %d %d", exec_of_player, &player_arg1, &player_arg2, &player_arg3);
+    scanf("%s %s %s %s", exec_of_player, player_arg1, player_arg2, player_arg3);
     scanf("%d", &no_of_monsters);
 
     for(int i=0; i < no_of_monsters; i++)
-        scanf("%s %c %d %d %d %d %d %d", exec_of_monsters[i], symbols+i, &mr_coords[i].x, &mr_coords[i].y, mr_arg1+i, mr_arg2+i, mr_arg3+i, mr_arg4+i);
+        //scanf("%s %c %d %d %d %d %d %d", path_of_monsters[i], symbols+i, &mr_coords[i].x, &mr_coords[i].y, mr_arg1+i, mr_arg2+i, mr_arg3+i, mr_arg4+i);
+        scanf("%s %c %d %d %s %s %s %s", path_of_monsters[i], symbols+i, &mr_coords[i].x, &mr_coords[i].y, mr_arg1[i], mr_arg2[i], mr_arg3[i], mr_arg4[i]);
 
     // Ordering of monsters
     // TODO: CHANGE THE ORDER OF EXECUTABLE PATHS ! Done.
     
-    sort_monsters(false, monster_fds, mr_alive, no_of_monsters, mr_coords, symbols, mr_arg1, mr_arg2, mr_arg3, mr_arg4, exec_of_monsters);
+    sort_monsters(false, monster_fds, mr_alive, no_of_monsters, mr_coords, symbols, mr_arg1, mr_arg2, mr_arg3, mr_arg4, path_of_monsters);
+
+    /*
+    for (int i=0; i < no_of_monsters; i++){
+        printf("Executable path of %d is %s\n", i, path_of_monsters[i]);
+        printf("Symbol: %c\n", symbols[i]);
+        printf("x:%d, y:%d\n", mr_coords[i].x, mr_coords[i].y);
+        printf("Arg.1 is %s\n", mr_arg1[i]);
+        printf("Arg.2 is %s\n", mr_arg2[i]);
+        printf("Arg.3 is %s\n", mr_arg3[i]);
+        printf("Arg.4 is %s\n", mr_arg4[i]);
+    }
+    */
 
     // Creating the pipe between the player and the game world.
     if(PIPE(player_fd) < 0)
@@ -67,15 +83,20 @@ int main(void){
         close(player_fd[0]);
 
         // Are you sure of 15 bytes?
-        char x_pos_door_str[15], y_pos_door_str[15], player_arg1_str[15], player_arg2_str[15], player_arg3_str[15];
+        //char x_pos_door_str[15], y_pos_door_str[15], player_arg1_str[15], player_arg2_str[15], player_arg3_str[15];
+
+        char x_pos_door_str[15], y_pos_door_str[15];
 
         sprintf(x_pos_door_str, "%d", x_pos_of_the_door);
         sprintf(y_pos_door_str, "%d", y_pos_of_the_door);
+        /*
         sprintf(player_arg1_str, "%d", player_arg1);
         sprintf(player_arg2_str, "%d", player_arg2);
         sprintf(player_arg3_str, "%d", player_arg3);
+        */
 
-        char* argv[] = {exec_of_player,  x_pos_door_str,  y_pos_door_str, player_arg1_str, player_arg2_str, player_arg3_str, NULL};
+        //char* argv[] = {exec_of_player,  x_pos_door_str,  y_pos_door_str, player_arg1_str, player_arg2_str, player_arg3_str, NULL};
+        char* argv[] = {exec_of_player,  x_pos_door_str,  y_pos_door_str, player_arg1, player_arg2, player_arg3, NULL};
         execv(exec_of_player, argv);
     
         printf("This should not be printed 1...\n");
@@ -110,15 +131,18 @@ int main(void){
             close(monster_fds[i][0]);
 
             // Are you sure of 15 bytes?
+            /*
             char health[15], dmg_induced[15], defence[15], range[15];
 
             sprintf(health, "%d", mr_arg1[i]);
             sprintf(dmg_induced, "%d", mr_arg2[i]);
             sprintf(defence, "%d", mr_arg3[i]);
             sprintf(range, "%d", mr_arg4[i]);
+            */
 
-            char* argv[] = {exec_of_monsters[i], health, dmg_induced, defence, range, NULL};
-            execv(exec_of_monsters[i], argv);
+            //char* argv[] = {path_of_monsters[i], health, dmg_induced, defence, range, NULL};
+            char* argv[] = {path_of_monsters[i], mr_arg1[i], mr_arg2[i], mr_arg3[i], mr_arg4[i]};
+            execv(path_of_monsters[i], argv);
 
             printf( "This should not be printed 2...\n");
         }
@@ -334,7 +358,7 @@ int main(void){
         }
 
         // Re-ordering of monsters go here. NOTE: Keep pipes in mind.
-        sort_monsters(true, monster_fds, mr_alive, no_of_monsters, mr_coords, symbols, mr_arg1, mr_arg2, mr_arg3, mr_arg4, exec_of_monsters);
+        sort_monsters(true, monster_fds, mr_alive, no_of_monsters, mr_coords, symbols, mr_arg1, mr_arg2, mr_arg3, mr_arg4, path_of_monsters);
         
         if (tmp_no_of_monsters == 0){
             game_over = true;
@@ -381,6 +405,8 @@ int main(void){
     }
 
     print_game_over(go_status);
+
+    // Closing all the FD's left open
 
     close(player_fd[1]);
     for (int i=0; i < no_of_monsters; i++)

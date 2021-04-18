@@ -17,6 +17,15 @@ void swap_chr(char* chr1, char* chr2){
     *chr2 = tmp;
 }
 
+void swap_str(char* str1, char* str2){
+    
+    char tmp_str[PATH_MAX];
+
+    strcpy(tmp_str, str2);
+    strcpy(str2, str1);
+    strcpy(str1, tmp_str);
+}
+
 // Copies coord1 into coord2
 void copy_coords(int n, bool* mr_alive, coordinate* coord1, coordinate* coord2){
 
@@ -42,8 +51,10 @@ bool occupied_by_monsters(int no_of_monsters, coordinate* mr_coords, bool* mr_al
     return false;
 }
 
+// Sorting arguments is unnecessary but have a little time left...
+
 void sort_monsters(bool sort_pipes, int mr_fds[][2], bool* mr_alive, int no_of_monsters, coordinate* mr_coords, 
-                    char* symbols, int* mr_arg1, int* mr_arg2, int* mr_arg3, int* mr_arg4, char exec_of_monsters[][PATH_MAX]){
+                    char* symbols, char mr_arg1[][1024], char mr_arg2[][1024], char mr_arg3[][1024], char mr_arg4[][1024], char exec_of_monsters[][PATH_MAX]){
     
     for (int i=0; i < no_of_monsters; i++){
 
@@ -78,16 +89,25 @@ void sort_monsters(bool sort_pipes, int mr_fds[][2], bool* mr_alive, int no_of_m
             mr_alive[i] = mr_alive[index];
             mr_alive[index] = tmp;
 
+            /*
             swap(mr_arg1+i, mr_arg1+index);
             swap(mr_arg2+i, mr_arg2+index);
             swap(mr_arg3+i, mr_arg3+index);
             swap(mr_arg4+i, mr_arg4+index);
+            */
 
+            swap_str(mr_arg1[i], mr_arg1[index]);
+            swap_str(mr_arg2[i], mr_arg2[index]);
+            swap_str(mr_arg3[i], mr_arg3[index]);
+            swap_str(mr_arg4[i], mr_arg4[index]);
+            swap_str(exec_of_monsters[i], exec_of_monsters[index]);
+            /*
             char tmp_str[PATH_MAX];
             strcpy(tmp_str, exec_of_monsters[i]);
             strcpy(exec_of_monsters[i], exec_of_monsters[index]);
             strcpy(exec_of_monsters[index], tmp_str);
-
+            */
+            
             if (sort_pipes){
                 //swap(&mr_fds[i][0], &mr_fds[index][0]); NOT NEEDED since they are already closed.
                 swap(&mr_fds[i][1], &mr_fds[index][1]);
