@@ -434,5 +434,8 @@ int main(void){
 
     print_game_over(go_status);
 
+    close(player_fd[1]);
+    for (int i=0; i < no_of_monsters; i++)
+        close(monster_fds[i][1]);
     //while(1);
 }
