@@ -2,6 +2,8 @@
 #include "message.h"
 #include <stdbool.h>
 #include <stdio.h>
+#include <limits.h>
+#include <string.h>
 
 void swap(int* x, int* y){
     int tmp = *x;
@@ -41,7 +43,7 @@ bool occupied_by_monsters(int no_of_monsters, coordinate* mr_coords, bool* mr_al
 }
 
 void sort_monsters(bool sort_pipes, int mr_fds[][2], bool* mr_alive, int no_of_monsters, coordinate* mr_coords, 
-                    char* symbols, int* mr_arg1, int* mr_arg2, int* mr_arg3, int* mr_arg4){
+                    char* symbols, int* mr_arg1, int* mr_arg2, int* mr_arg3, int* mr_arg4, char exec_of_monsters[][PATH_MAX]){
     
     for (int i=0; i < no_of_monsters; i++){
 
@@ -54,9 +56,6 @@ void sort_monsters(bool sort_pipes, int mr_fds[][2], bool* mr_alive, int no_of_m
             //if (!mr_alive[j]) continue;
 
             if (mr_coords[j].x < min.x){
-                
-                //min.x = mr_coords[j].x;
-                //min.y = mr_coords[j].y;
                 min = mr_coords[j];
                 index = j;
             }
@@ -83,6 +82,11 @@ void sort_monsters(bool sort_pipes, int mr_fds[][2], bool* mr_alive, int no_of_m
             swap(mr_arg2+i, mr_arg2+index);
             swap(mr_arg3+i, mr_arg3+index);
             swap(mr_arg4+i, mr_arg4+index);
+
+            char tmp_str[PATH_MAX];
+            strcpy(tmp_str, exec_of_monsters[i]);
+            strcpy(exec_of_monsters[i], exec_of_monsters[index]);
+            strcpy(exec_of_monsters[index], tmp_str);
 
             if (sort_pipes){
                 //swap(&mr_fds[i][0], &mr_fds[index][0]); NOT NEEDED since they are already closed.
